@@ -1,0 +1,437 @@
+Cortex Atlas - Matthew Ballard - 2025
+
+
+# **1. CORE CONCEPT**
+
+**Cortex Atlas** = an AI system that ingests a person’s written communication (emails, tickets, chats, documentation) and produces a **formalized cognitive operating model** of how that person interprets information, makes decisions, and miscommunicates.
+
+It’s NOT “personality analysis.”
+It’s **thinking-style translation tech.**
+
+---
+
+# **2. MVP SCOPE (STRICT)**
+
+### **Inputs**
+
+* 5–200 text samples per person.
+* Sources: uploaded docs, pasted text, Gmail/Slack integration (OAuth), Jira tickets.
+
+### **Outputs**
+
+A **Cognitive Operating Sheet** with the following components:
+
+1. **Information Structure Profile**
+
+   * Prefers bottom-up vs. top-down reasoning
+   * Implicit assumptions they always make
+   * How they chunk information
+   * Compression level (over-detailed, under-detailed, etc.)
+
+2. **Decision Grammar**
+
+   * IF/THEN patterns
+   * Common state transitions (e.g., *uncertainty → overexplaining*, *pressure → shortcutting*)
+
+3. **Ambiguity Model**
+
+   * Tolerance level
+   * What types of ambiguity cause breakdowns
+   * How they resolve missing details
+
+4. **Interpretation Biases**
+
+   * Risk-seeking vs risk-averse
+   * Error modes (e.g., “misreads urgency,” “interprets suggestions as requirements,” etc.)
+
+5. **Translation Guide**
+
+   * *How YOU must speak to THEM for signal clarity.*
+   * Sentence templates
+   * “Don’t do this” list
+   * “They misunderstand X as Y” mapping
+
+6. **Team Map (MVP+)**
+
+   * Overlay 2–20 people
+   * Visual mismatch heatmap
+   * Team failure-mode prediction
+
+### **Non-Features (MVP Exclusions)**
+
+* No predictive psychology
+* No video/audio ingestion
+* No sentiment scoring
+* No therapy/medical positioning
+* No real-time Slack bot (v2)
+
+---
+
+# **3. SYSTEM ARCHITECTURE**
+
+### **Frontend**
+
+* Next.js + Tailwind (fast, clean)
+* OAuth setup (Gmail, Slack, Notion optional)
+* Secure file/text upload
+* Dynamic “Cognitive Map” renderer (D3.js or Recharts)
+
+### **Backend**
+
+* FastAPI (Python) or Node/Typescript
+* Auth: Supabase Auth or Clerk
+* User/project storage: Postgres
+* File storage: S3-compatible (e.g., Cloudflare R2)
+
+### **AI Layer**
+
+**Primary Components:**
+
+1. **Embedding Engine**
+
+   * Sentence-transformers (e.g., bge-large-en or similar)
+   * Vector DB (Weaviate / Pinecone / Qdrant)
+
+2. **LLM Interpretation Layer**
+
+   * Mistral 7B (fine-tuned) or GPT-4.1 for early inference
+   * Converts clusters → cognitive profile
+
+3. **Automata Approximation Engine**
+
+   * Model to infer state transitions:
+
+     * Extracts repeated structures
+     * Identifies decision triggers
+     * Outputs a pseudo-state-machine
+   * Techniques:
+
+     * Finite-state induction from sequence patterns
+     * Probabilistic automata (Alergia algorithm or GramGAN variant)
+     * Hard rule-mining à la RIPPER
+
+4. **Translation Engine**
+
+   * LLM generates “To communicate with this person, do X” constraints
+   * Severity grading on mismatch zones
+
+---
+
+# **4. DATA PIPELINE**
+
+### **1. Collection**
+
+* OAuth connectors or manual upload
+* HTML/text extraction
+* Normalization (strip signatures, boilerplate)
+
+### **2. Segmentation**
+
+* Split into semantic units (thought blocks)
+* Remove filler and non-decisions
+
+### **3. Structural Feature Extraction**
+
+Each text chunk gets features for:
+
+* Entropy
+* Logical operator frequency
+* Hedging/commitment patterns
+* Ordering preference
+* Abstraction level
+* Topic drift
+
+### **4. Clustering**
+
+Group by cognitive consistency:
+
+* “Planning mode”
+* “Explaining mode”
+* “Task decomposition mode”
+* “Boundary-setting mode,” etc.
+
+### **5. Automata Inference**
+
+* Extract transitions between modes
+* Build state machine representing thought flow
+* Derive internal grammar (what triggers state jumps)
+
+### **6. LLM Interpretation**
+
+* Convert automata + stats → readable cognitive sheet
+* Identify failure modes
+* Produce communication “translation keys”
+
+### **7. Delivery**
+
+* Render as interactive map
+* Export PDF (HR, managers, coaches)
+
+---
+
+# **5. MODELING STRATEGY**
+
+### **Base Models**
+
+* Mistral 7B (local fine-tune: LoRA) → interpretable reasoning layer
+* bge-large-en embedding model for clustering
+
+### **Fine-Tuning Data**
+
+Synthetic + real:
+
+* Thousands of “communication pattern → profile” examples
+* You can generate synthetic corpora of different thinking styles (engineer, PM, frantic founder, autistic communicator, ADHD communicator, etc.)
+
+### **Automata Induction**
+
+* Use Alergia to extract a deterministic probabilistic automaton from text sequences
+* Simplify into human-readable states
+* Map triggers directly to communication behaviors
+
+### **Differentiator**
+
+This isn’t vibes.
+This is **formal inference + interpretive LLM.**
+
+---
+
+# **6. USER FLOWS**
+
+### **Onboarding**
+
+1. User creates org
+2. Uploads text samples (or integrates Slack/Gmail)
+3. Sets “analysis target” (self or teammate)
+
+### **Ingestion**
+
+* Progress bar
+* “Sample quality” report
+
+### **Output**
+
+* Cognitive Operating Sheet
+* State Machine Visualization
+* “How to Write for This Person” cheat-sheet
+* Communication Recipes:
+
+  * “If you need alignment, use format X”
+  * “If you want them to catch nuance, phrase it as Y”
+
+### **Retention Loop**
+
+* Users run recurring analyses over time
+* Compare “thinking drift”
+* Track communication improvements
+* Team compatibility map unlocks for orgs
+
+---
+
+# **7. BUSINESS MODEL**
+
+### **Pricing (SaaS)**
+
+* **Individual:** $18/mo
+* **Teams:** $30/user/mo
+* **Enterprise:** $5–20k/yr
+* **One-time Audits:** $499 per person
+* **HR/Leadership Consulting Add-on:** $2k–$10k
+
+### **Wedge Strategy**
+
+Start with 1 painful thing:
+**“Our team miscommunicates constantly and I don’t know why.”**
+
+---
+
+# **8. MARKET SIZING**
+
+### **B2B TAM**
+
+* 100M knowledge workers in US/EU who write daily
+* 20M mid-level managers dealing with communication breakdown
+* HR spend on communication training annually: **$15–25B**
+* Coaching industry: **$3B**
+* Collaboration SaaS market: **$50B**
+
+You only need 50k paid seats to become a $20–30M ARR company.
+
+---
+
+# **9. COMPETITION MAP**
+
+**Closest neighbors (but not actual competitors):**
+
+* CrystalKnows → personality typing
+* Receptive.io → team communication patterns
+* Grammarly → writing quality
+* Gong → sales conversation analysis
+
+**None infer cognitive structure from text.**
+
+Your differentiator:
+**You generate a formal machine of how a person reads the world.**
+
+---
+
+# **10. INVESTOR PITCH DECK OUTLINE (COPY INCLUDED)**
+
+### **Slide 1 — Title**
+
+**Cortex Atlas**
+AI that decodes how people think, not just how they write.
+
+### **Slide 2 — Problem**
+
+Teams fail not from lack of skill, but from incompatible thinking models.
+Nobody knows why miscommunication happens—only that it does.
+
+### **Slide 3 — Solution**
+
+Cortex Atlas builds a cognitive map from a person’s writing, revealing their decision grammar, interpretation biases, and communication triggers.
+
+### **Slide 4 — Why Now**
+
+* AI finally capable of pattern induction
+* Remote work → written communication dominates
+* Explosion of cross-functional teams requiring translation layers
+
+### **Slide 5 — How It Works**
+
+Text → Feature Extraction → Automata Induction → LLM Interpretation → Cognitive Operating Sheet.
+
+### **Slide 6 — Demo (Mock)**
+
+Visualization of states:
+Planning ↔ Overload ↔ Precision Mode ↔ Shutdown Loop.
+
+### **Slide 7 — Value**
+
+* Reduce miscommunication
+* Faster onboarding
+* Less managerial friction
+* Clear cross-functional collaboration
+* Improved psychological safety without fluff
+
+### **Slide 8 — Market**
+
+$50B collaboration software
+$25B corporate training
+$3B coaching
+Under-served: 100M knowledge workers
+
+### **Slide 9 — GTM**
+
+Start with startups + engineering orgs → HR → enterprise rollouts.
+
+### **Slide 10 — Business Model**
+
+SaaS + audits + enterprise annual licenses.
+
+### **Slide 11 — Moat**
+
+* Proprietary cognitive datasets
+* Automata induction engine
+* Organizational network effects (maps become assets)
+
+### **Slide 12 — Roadmap**
+
+MVP → Team Maps → Drift Tracking → Predictive Collaboration Engine.
+
+### **Slide 13 — Team**
+
+Founder-led, AI-heavy, deep technical.
+
+### **Slide 14 — Ask**
+
+$1.5M seed → 18 months runway → 7-person team.
+
+---
+
+# **11. 12-MONTH PRODUCT ROADMAP**
+
+### **Q1 — Base Infrastructure**
+
+* Ingestion pipeline
+* Embedding/LLM integration
+* First version of automata extractor
+* Basic cognitive sheet
+
+### **Q2 — Visualization**
+
+* Interactive state machine
+* Team map dashboard
+* Translation engine v1
+
+### **Q3 — Org Scale**
+
+* Slack/Gmail deep sync
+* Batch analysis for 50–100 users
+* “Thinking drift” versioning
+* Security compliance groundwork
+
+### **Q4 — Enterprise**
+
+* SSO
+* SOC2
+* HR workflow integrations
+* Coaching dashboard
+* API for 3rd-party tools
+
+---
+
+# **12. HIRING PLAN**
+
+### **Founding Team**
+
+* **You** — CEO + Head of AI Research (you actually have the right background)
+* **Founding ML Engineer** — automata + embeddings + fine-tuning
+* **Founding Full-Stack Engineer** — Next.js + FastAPI
+* **Product Designer** — minimal but high clarity
+
+### **Post-Seed Additions**
+
+* DevOps/SRE
+* Data Engineer
+* B2B Sales Lead
+* Customer Research Lead
+
+---
+
+# **13. RISK ANALYSIS (REAL, NOT FLUFF)**
+
+### **1. “Pseudoscience” Perception**
+
+Mitigation: emphasize **behavioral patterns**, not personality.
+
+### **2. Data Privacy**
+
+Mitigation: zero-retention processing; on-prem compute for enterprise.
+
+### **3. Overtrust in AI Interpretation**
+
+Mitigation: show raw data → show reasoning → show uncertainty.
+
+### **4. HR misuse**
+
+Mitigation: don’t position as hiring/firing tool.
+
+### **5. Hard Problem: Automata Inference**
+
+Mitigation: hybrid statistical + LLM interpretation; don’t overspecify states.
+
+---
+
+# **You now have a complete founder-level blueprint.**
+
+If you want, I can now create:
+
+* the **MVP GitHub repo structure**
+* the **database schema**
+* the **API endpoints**
+* the **automata induction prototype code**
+* the **LLM prompt frameworks**
+* or the **full investor deck as a PDF**
+
+Pick the next layer.
