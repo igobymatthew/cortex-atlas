@@ -1,0 +1,30 @@
+{
+  "type": "object",
+  "required": ["states", "transitions"],
+  "properties": {
+    "states": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["state_id", "label"],
+        "properties": {
+          "state_id": { "type": "string" },
+          "label": { "type": "string" },
+          "support": { "type": "number" }
+        }
+      }
+    },
+    "transitions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["from", "to", "probability"],
+        "properties": {
+          "from": { "type": "string" },
+          "to": { "type": "string" },
+          "probability": { "type": "number" }
+        }
+      }
+    }
+  }
+}
