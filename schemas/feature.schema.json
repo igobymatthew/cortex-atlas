@@ -1,0 +1,18 @@
+{
+  "type": "object",
+  "required": ["chunk_id", "features"],
+  "properties": {
+    "chunk_id": { "type": "string" },
+    "features": {
+      "type": "object",
+      "properties": {
+        "information_density": { "type": "number" },
+        "logical_operator_ratio": { "type": "number" },
+        "hedging_frequency": { "type": "number" },
+        "abstraction_level": { "type": "number" },
+        "ordering_strength": { "type": "number" },
+        "topic_drift": { "type": "number" }
+      }
+    }
+  }
+}
