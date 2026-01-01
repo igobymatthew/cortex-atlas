@@ -1,0 +1,12 @@
+{
+  "type": "object",
+  "required": ["overall", "notes"],
+  "properties": {
+    "overall": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "notes": { "type": "string" }
+  }
+}
