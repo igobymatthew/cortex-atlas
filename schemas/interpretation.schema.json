@@ -1,0 +1,19 @@
+{
+  "type": "object",
+  "required": ["summary", "guidance", "failure_modes"],
+  "properties": {
+    "summary": { "type": "string" },
+    "guidance": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "failure_modes": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "non_claims": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}
