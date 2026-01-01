@@ -1,0 +1,13 @@
+{
+  "type": "object",
+  "required": ["cluster_id", "member_chunks"],
+  "properties": {
+    "cluster_id": { "type": "string" },
+    "label": { "type": "string" },
+    "member_chunks": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "coherence_score": { "type": "number" }
+  }
+}
