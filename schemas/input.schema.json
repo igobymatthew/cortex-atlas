@@ -1,0 +1,14 @@
+{
+  "type": "object",
+  "required": ["document_id", "author_id", "content", "timestamp"],
+  "properties": {
+    "document_id": { "type": "string" },
+    "author_id": { "type": "string" },
+    "source": {
+      "type": "string",
+      "enum": ["email", "chat", "doc", "ticket", "note"]
+    },
+    "content": { "type": "string" },
+    "timestamp": { "type": "string", "format": "date-time" }
+  }
+}
