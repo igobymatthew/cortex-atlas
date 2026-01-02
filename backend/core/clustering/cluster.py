@@ -1,36 +1,23 @@
-from typing import List
-import re
+from typing import List, Dict
+import numpy as np
 
-MIN_CHUNK_LENGTH = 40
-MAX_CHUNK_LENGTH = 500
-
-def chunk_text(text: str) -> List[str]:
+def cluster_embeddings(
+    embeddings: List[List[float]],
+    min_cluster_size: int = 3
+) -> Dict[int, List[int]]:
     """
-    Split text into semantically meaningful chunks.
-    Prefers paragraph boundaries, falls back to sentences.
+    Simple placeholder clustering.
+    Replace internals with HDBSCAN later without changing signature.
     """
-    if not text or not text.strip():
-        return []
+    if not embeddings:
+        return {}
 
-    paragraphs = [p.strip() for p in text.split("\n\n") if p.strip()]
-    chunks: List[str] = []
+    clusters: Dict[int, List[int]] = {}
+    cluster_id = 0
 
-    for p in paragraphs:
-        if len(p) <= MAX_CHUNK_LENGTH:
-            if len(p) >= MIN_CHUNK_LENGTH:
-                chunks.append(p)
-        else:
-            # fallback to sentence split
-            sentences = re.split(r"(?<=[.!?])\s+", p)
-            buffer = ""
-            for s in sentences:
-                if len(buffer) + len(s) < MAX_CHUNK_LENGTH:
-                    buffer += " " + s
-                else:
-                    if len(buffer.strip()) >= MIN_CHUNK_LENGTH:
-                        chunks.append(buffer.strip())
-                    buffer = s
-            if len(buffer.strip()) >= MIN_CHUNK_LENGTH:
-                chunks.append(buffer.strip())
+    for idx, _ in enumerate(embeddings):
+        clusters.setdefault(cluster_id, []).append(idx)
+        if len(clusters[cluster_id]) >= min_cluster_size:
+            cluster_id += 1
 
-    return chunks
+    return clusters
