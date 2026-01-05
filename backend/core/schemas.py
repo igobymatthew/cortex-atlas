@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field
 class Input(BaseModel):
     document_id: str
     author_id: str
-    source: Optional[Literal["email", "chat", "doc", "ticket", "note"]] = None
+    source: Literal["email", "chat", "doc", "ticket", "note"] = "doc"
     content: str
     timestamp: datetime
 
@@ -19,6 +19,7 @@ class Chunk(BaseModel):
     document_id: str
     content: str
     index: int
+    timestamp: datetime
 
 
 class FeatureVector(BaseModel):
@@ -50,8 +51,11 @@ class AutomataState(BaseModel):
 
 class AutomataTransition(BaseModel):
     from_state: str = Field(..., alias="from")
-    to: str
+    to_state: str = Field(..., alias="to")
     probability: float
+
+    class Config:
+        allow_population_by_field_name = True
 
 
 class Automata(BaseModel):
@@ -79,11 +83,9 @@ class VersionInfo(BaseModel):
 
 class Report(BaseModel):
     subject_id: str
-    patterns: Cluster
+    patterns: List[Cluster]
+    primary_cluster_id: Optional[str] = None
     automata: Automata
-    interpretation: Interpretation
+    interpretation: Optional[Interpretation] = None
     confidence: Confidence
     version: VersionInfo
-
-    class Config:
-        allow_population_by_field_name = True
