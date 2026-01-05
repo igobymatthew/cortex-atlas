@@ -1,12 +1,14 @@
 from __future__ import annotations
 
-from typing import Iterable, List, Sequence
+from typing import Iterable, List, Sequence, Dict
+from datetime import datetime
 
 from backend.core.automata.state_inference import infer_states
 from backend.core.clustering.cluster import cluster_embeddings
 from backend.core.confidence.scoring import compute_confidence
 from backend.core.features.structural import extract_structural_features
 from backend.core.ingestion.chunking import chunk_text
+
 from backend.core.schemas import (
     Automata,
     AutomataState,
@@ -31,6 +33,12 @@ FEATURE_FIELDS = (
     "topic_drift",
 )
 
+FEATURES_VERSION = "0.1.0"
+AUTOMATA_VERSION = "0.1.0"
+INTERPRETATION_VERSION = "0.1.0"
+
+
+# ---------- Normalization ----------
 
 def _normalize_inputs(documents: Iterable[Input | dict]) -> List[Input]:
     inputs: List[Input] = []
@@ -45,6 +53,8 @@ def _normalize_inputs(documents: Iterable[Input | dict]) -> List[Input]:
     return inputs
 
 
+# ---------- Chunking ----------
+
 def _build_chunks(documents: Sequence[Input]) -> List[Chunk]:
     chunks: List[Chunk] = []
     for document in documents:
@@ -55,10 +65,13 @@ def _build_chunks(documents: Sequence[Input]) -> List[Chunk]:
                     document_id=document.document_id,
                     content=content,
                     index=index,
+                    timestamp=document.timestamp,
                 )
             )
     return chunks
 
+
+# ---------- Features ----------
 
 def _build_features(chunks: Sequence[Chunk]) -> List[Feature]:
     features: List[Feature] = []
@@ -86,16 +99,30 @@ def _feature_embeddings(features: Sequence[Feature]) -> List[List[float]]:
     return embeddings
 
 
-def _build_clusters(chunks: Sequence[Chunk], embeddings: Sequence[List[float]]) -> List[Cluster]:
+# ---------- Clustering ----------
+
+def _build_clusters(
+    chunks: Sequence[Chunk],
+    embeddings: Sequence[List[float]],
+) -> List[Cluster]:
     clusters: List[Cluster] = []
     assignments = cluster_embeddings(list(embeddings))
     if not assignments:
         return clusters
 
     total_chunks = max(len(chunks), 1)
+
     for cluster_id, member_indices in assignments.items():
-        member_chunks = [chunks[idx].chunk_id for idx in member_indices]
+        member_chunks = [
+            chunks[idx].chunk_id
+            for idx in member_indices
+            if 0 <= idx < len(chunks)
+        ]
+        if not member_chunks:
+            continue
+
         coherence_score = min(len(member_chunks) / total_chunks, 1.0)
+
         clusters.append(
             Cluster(
                 cluster_id=f"cluster_{cluster_id}",
@@ -104,89 +131,140 @@ def _build_clusters(chunks: Sequence[Chunk], embeddings: Sequence[List[float]]) 
                 coherence_score=round(coherence_score, 2),
             )
         )
+
     return clusters
 
 
 def _select_primary_cluster(clusters: Sequence[Cluster]) -> Cluster:
     if not clusters:
-        return Cluster(cluster_id="cluster_0", label="Cluster 0", member_chunks=[], coherence_score=0.0)
+        return Cluster(
+            cluster_id="cluster_noise",
+            label="Noise / Unclustered",
+            member_chunks=[],
+            coherence_score=0.0,
+        )
 
     return max(
         clusters,
-        key=lambda cluster: (cluster.coherence_score or 0.0, len(cluster.member_chunks)),
+        key=lambda c: ((c.coherence_score or 0.0), len(c.member_chunks)),
     )
 
+
+# ---------- Automata ----------
 
 def _build_automata(cluster_sequence: Sequence[str]) -> Automata:
-    states, transitions = infer_states(list(cluster_sequence))
-    return Automata(
-        states=[AutomataState(**state) for state in states],
-        transitions=[
-            AutomataTransition(from_state=transition["from"], to=transition["to"], probability=transition["probability"])
-            for transition in transitions
-        ],
-    )
+    states_raw, transitions_raw = infer_states(list(cluster_sequence))
+
+    states = [AutomataState(**state) for state in states_raw]
+    transitions = [
+        AutomataTransition(
+            from_state=t["from"],
+            to_state=t["to"],
+            probability=t["probability"],
+        )
+        for t in transitions_raw
+    ]
+
+    return Automata(states=states, transitions=transitions)
 
 
-def run_pipeline(documents: Iterable[Input | dict]) -> Report:
+# ---------- Pipeline ----------
+
+def run_pipeline(
+    subject_id: str,
+    documents: Iterable[Input | dict],
+    enable_interpretation: bool = True,
+) -> Report:
     inputs = _normalize_inputs(documents)
     chunks = _build_chunks(inputs)
-    if not chunks:
+
+    if len(chunks) < 5:
         interpretation = Interpretation(
-            summary="No usable chunks were available for analysis.",
-            guidance=["Provide more text to infer stable patterns."],
-            failure_modes=["Insufficient volume prevents reliable clustering."],
+            summary="Insufficient text volume to infer stable communication patterns.",
+            guidance=["Provide more written material for analysis."],
+            failure_modes=["Too few chunks for reliable clustering."],
             non_claims=["This analysis does not assess personality, intent, or mental state."],
         )
+
         return Report(
-            subject_id=inputs[0].author_id if inputs else "unknown",
-            patterns=Cluster(cluster_id="cluster_0", label="Cluster 0", member_chunks=[], coherence_score=0.0),
+            subject_id=subject_id,
+            patterns=[],
+            primary_cluster_id=None,
             automata=Automata(states=[], transitions=[]),
             interpretation=interpretation,
-            confidence=Confidence(overall=0.0, notes="Insufficient text volume for inference."),
-            version=VersionInfo(features="0.1.0", automata="0.1.0", interpretation="0.1.0"),
+            confidence=Confidence(
+                overall=0.2,
+                notes="Insufficient usable text for inference.",
+            ),
+            version=VersionInfo(
+                features=FEATURES_VERSION,
+                automata=AUTOMATA_VERSION,
+                interpretation=INTERPRETATION_VERSION,
+            ),
         )
+
+    # Order chunks by time before sequencing
+    chunks = sorted(chunks, key=lambda c: c.timestamp)
 
     features = _build_features(chunks)
     embeddings = _feature_embeddings(features)
     clusters = _build_clusters(chunks, embeddings)
-    primary_cluster = _select_primary_cluster(clusters)
 
-    cluster_by_chunk = {chunk_id: primary_cluster.cluster_id for chunk_id in primary_cluster.member_chunks}
+    # Map every chunk to its assigned cluster
+    chunk_to_cluster: Dict[str, str] = {}
+    for cluster in clusters:
+        for cid in cluster.member_chunks:
+            chunk_to_cluster[cid] = cluster.cluster_id
+
     cluster_sequence = [
-        cluster_by_chunk.get(chunk.chunk_id, primary_cluster.cluster_id) for chunk in chunks
+        chunk_to_cluster.get(chunk.chunk_id, "cluster_noise")
+        for chunk in chunks
     ]
 
     automata = _build_automata(cluster_sequence)
-    coherence_score = primary_cluster.coherence_score or 0.0
-    confidence_value = compute_confidence(len(chunks), len(automata.states), coherence_score)
 
-    interpretation = Interpretation(
-        summary=(
-            f"Observed {len(chunks)} text chunks grouped into {len(clusters) or 1} communication pattern cluster(s)."
-        ),
-        guidance=[
-            "Provide clear structure when introducing new topics.",
-            "Confirm shared assumptions before moving into details.",
-        ],
-        failure_modes=[
-            "Sparse text limits detectable structure.",
-            "Mixed topics may reduce clustering coherence.",
-        ],
-        non_claims=[
-            "This analysis does not assess personality, intent, or mental state.",
-            "It only summarizes observable communication patterns.",
-        ],
+    primary_cluster = _select_primary_cluster(clusters)
+    coherence = primary_cluster.coherence_score or 0.0
+    confidence_value = compute_confidence(
+        num_chunks=len(chunks),
+        num_states=len(automata.states),
+        coherence_score=coherence,
     )
 
+    interpretation = None
+    if enable_interpretation:
+        interpretation = Interpretation(
+            summary=(
+                f"Observed {len(chunks)} text chunks grouped into "
+                f"{len(clusters)} communication pattern clusters."
+            ),
+            guidance=[
+                "Present high-level intent before detailed constraints.",
+                "Clarify ownership when transitioning between topics.",
+            ],
+            failure_modes=[
+                "Sparse data reduces detectable structure.",
+                "Mixed topics may weaken clustering coherence.",
+            ],
+            non_claims=[
+                "This analysis does not assess personality or intent.",
+                "It models observable communication structure only.",
+            ],
+        )
+
     return Report(
-        subject_id=inputs[0].author_id if inputs else "unknown",
-        patterns=primary_cluster,
+        subject_id=subject_id,
+        patterns=clusters,
+        primary_cluster_id=primary_cluster.cluster_id,
         automata=automata,
         interpretation=interpretation,
         confidence=Confidence(
             overall=confidence_value,
-            notes="Confidence is based on chunk volume, state variety, and clustering coherence.",
+            notes="Confidence reflects chunk volume, state variety, and cluster coherence.",
         ),
-        version=VersionInfo(features="0.1.0", automata="0.1.0", interpretation="0.1.0"),
+        version=VersionInfo(
+            features=FEATURES_VERSION,
+            automata=AUTOMATA_VERSION,
+            interpretation=INTERPRETATION_VERSION,
+        ),
     )
