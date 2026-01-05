@@ -1,5 +1,30 @@
 # SECURITY.md — Cortex Atlas
+```mermaid
+flowchart LR
+    User --> Client
+    Client --> API
 
+    subgraph Trusted_API
+        API --> Validation
+        Validation --> Core
+    end
+
+    subgraph Core_Inference
+        Core --> Chunking
+        Chunking --> Features
+        Features --> Clustering
+        Clustering --> Automaton
+        Automaton --> Confidence
+    end
+
+    Confidence --> Storage
+
+    Confidence --> Interpretation
+    Interpretation --> LLM
+
+    Storage --> API
+    API --> Client
+```
 ## Overview
 
 Cortex Atlas is a proprietary AI system that processes sensitive written communication data.  
